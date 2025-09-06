@@ -1,0 +1,9 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# IDE-specific ignores
+.vscode
+
+# Project-specific ignores
+builds/
