@@ -19,6 +19,10 @@ config/icon="res://icon.svg"
 
 Pieces="*res://game/blocks/pieces.gd"
 
+[debug]
+
+gdscript/warnings/untyped_declaration=1
+
 [display]
 
 window/size/viewport_width=1280
