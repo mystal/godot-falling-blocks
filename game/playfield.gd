@@ -27,7 +27,7 @@ var active_piece: Array[Vector2i]
 # Tilemap vars
 var atlas_source_id := 0
 var piece_atlas_coords: Vector2i
-var next_piece_atlas: Vector2i
+var next_piece_atlas_coords: Vector2i
 
 var next_pieces := []
 
@@ -39,7 +39,10 @@ func new_game() -> void:
 	steps = [0.0, 0.0, 0.0]
 	piece_type = pick_piece()
 	piece_atlas_coords = Vector2i(Pieces.ALL.find(piece_type) + 1, 0)
+	next_piece_type = pick_piece()
+	next_piece_atlas_coords = Vector2i(Pieces.ALL.find(next_piece_type) + 1, 0)
 	create_piece()
+	MessageBus.new_game.emit()
 
 func _process(_delta: float) -> void:
 	if Input.is_action_pressed("ui_left"):
@@ -73,6 +76,9 @@ func create_piece() -> void:
 	cur_pos = START_POS
 	active_piece = piece_type[rotation_index]
 	draw_piece(active_piece, cur_pos, piece_atlas_coords)
+
+	# Show next piece
+	draw_piece(next_piece_type[0], Vector2i(14, 24), next_piece_atlas_coords)
 
 func clear_piece() -> void:
 	for block_pos in active_piece:

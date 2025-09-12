@@ -1,8 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://vvsnpvu6jr6b"]
+[gd_scene load_steps=3 format=3 uid="uid://vvsnpvu6jr6b"]
 
 [ext_resource type="PackedScene" uid="uid://bpfd6t876kxr" path="res://game/playfield.tscn" id="1_l1rk1"]
+[ext_resource type="PackedScene" uid="uid://dkolt4p21odin" path="res://game/hud.tscn" id="2_vasa2"]
 
 [node name="Main" type="Node2D"]
 
 [node name="Playfield" parent="." instance=ExtResource("1_l1rk1")]
 position = Vector2(480, 60)
+
+[node name="HUD" parent="." instance=ExtResource("2_vasa2")]
