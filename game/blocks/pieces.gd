@@ -1,5 +1,7 @@
 extends Node
 
+const ROTATIONS := 4
+
 const o_0: Array[Vector2i] = [Vector2i(1, 0), Vector2i(2, 0), Vector2i(1, 1), Vector2i(2, 1)]
 const o_90 := o_0
 const o_180 := o_0

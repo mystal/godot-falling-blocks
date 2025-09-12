@@ -20,7 +20,7 @@ var speed: float
 
 # Piece vars
 var piece_type: Array
-var next_piece_type
+var next_piece_type: Array
 var rotation_index := 0
 var active_piece: Array[Vector2i]
 
@@ -48,6 +48,8 @@ func _process(_delta: float) -> void:
 		steps[1] += 10.0
 	elif Input.is_action_pressed("ui_down"):
 		steps[2] += 10.0
+	elif Input.is_action_just_pressed("ui_up"):
+		rotate_piece()
 
 	# Apply downward movement every frame
 	steps[2] += speed
@@ -80,6 +82,14 @@ func draw_piece(piece_blocks: Array[Vector2i], pos: Vector2i, atlas_coords: Vect
 	for block_pos in piece_blocks:
 		active_tiles.set_cell(pos + block_pos, atlas_source_id, atlas_coords)
 
+func rotate_piece() -> void:
+	if not can_rotate():
+		return
+	clear_piece()
+	rotation_index = (rotation_index + 1) % Pieces.ROTATIONS
+	active_piece = piece_type[rotation_index]
+	draw_piece(active_piece, cur_pos, piece_atlas_coords)
+
 func move_piece(dir: Vector2i) -> void:
 	if not can_move(dir):
 		return
@@ -91,6 +101,14 @@ func move_piece(dir: Vector2i) -> void:
 func can_move(dir: Vector2i) -> bool:
 	for block_pos in active_piece:
 		if not is_free(cur_pos + block_pos + dir):
+			return false
+	return true
+
+func can_rotate() -> bool:
+	var new_rotation_index := (rotation_index + 1) % Pieces.ROTATIONS
+	var new_piece: Array[Vector2i] = piece_type[new_rotation_index]
+	for block_pos in new_piece:
+		if not is_free(cur_pos + block_pos):
 			return false
 	return true
 
