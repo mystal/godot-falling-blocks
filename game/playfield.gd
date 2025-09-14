@@ -74,15 +74,17 @@ func create_piece() -> void:
 	# Reset variables
 	steps = [0.0, 0.0, 0.0]
 	cur_pos = START_POS
+	rotation_index = 0
 	active_piece = piece_type[rotation_index]
 	draw_piece(active_piece, cur_pos, piece_atlas_coords)
 
 	# Show next piece
+	clear_piece(Vector2i(14, 24))
 	draw_piece(next_piece_type[0], Vector2i(14, 24), next_piece_atlas_coords)
 
-func clear_piece() -> void:
+func clear_piece(pos: Vector2i) -> void:
 	for block_pos in active_piece:
-		active_tiles.erase_cell(cur_pos + block_pos)
+		active_tiles.erase_cell(pos + block_pos)
 
 func draw_piece(piece_blocks: Array[Vector2i], pos: Vector2i, atlas_coords: Vector2i) -> void:
 	for block_pos in piece_blocks:
@@ -91,15 +93,23 @@ func draw_piece(piece_blocks: Array[Vector2i], pos: Vector2i, atlas_coords: Vect
 func rotate_piece() -> void:
 	if not can_rotate():
 		return
-	clear_piece()
+	clear_piece(cur_pos)
 	rotation_index = (rotation_index + 1) % Pieces.ROTATIONS
 	active_piece = piece_type[rotation_index]
 	draw_piece(active_piece, cur_pos, piece_atlas_coords)
 
 func move_piece(dir: Vector2i) -> void:
 	if not can_move(dir):
+		if dir == Vector2i.DOWN:
+			land_piece()
+			piece_type = next_piece_type
+			piece_atlas_coords = next_piece_atlas_coords
+			next_piece_type = pick_piece()
+			next_piece_atlas_coords = Vector2i(Pieces.ALL.find(next_piece_type) + 1, 0)
+			create_piece()
 		return
-	clear_piece()
+
+	clear_piece(cur_pos)
 	cur_pos += dir
 	draw_piece(active_piece, cur_pos, piece_atlas_coords)
 
@@ -120,3 +130,9 @@ func can_rotate() -> bool:
 
 func is_free(pos: Vector2i) -> bool:
 	return board_tiles.get_cell_source_id(pos) == -1
+
+func land_piece() -> void:
+	# Remove each segment from the active tiles and move to the board tiles.
+	for block_pos in active_piece:
+		active_tiles.erase_cell(cur_pos + block_pos)
+		board_tiles.set_cell(cur_pos + block_pos, atlas_source_id, piece_atlas_coords)
