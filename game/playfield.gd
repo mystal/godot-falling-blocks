@@ -1,12 +1,13 @@
 class_name Playfield
 extends Node2D
 
-@onready var board_tiles: TileMapLayer = $BoardTiles
-@onready var active_tiles: TileMapLayer = $ActiveTiles
+@onready var board_tiles: TileMapLayer = $PlacedBlocks
+@onready var active_tiles: TileMapLayer = $ActiveBlocks
 
 # Grid vars
 const COLS := 10
 const ROWS := 20
+const TOP_ROW := 20
 
 # Movement vars
 const DIRECTIONS := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.DOWN]
@@ -102,6 +103,7 @@ func move_piece(dir: Vector2i) -> void:
 	if not can_move(dir):
 		if dir == Vector2i.DOWN:
 			land_piece()
+			check_rows()
 			piece_type = next_piece_type
 			piece_atlas_coords = next_piece_atlas_coords
 			next_piece_type = pick_piece()
@@ -136,3 +138,26 @@ func land_piece() -> void:
 	for block_pos in active_piece:
 		active_tiles.erase_cell(cur_pos + block_pos)
 		board_tiles.set_cell(cur_pos + block_pos, atlas_source_id, piece_atlas_coords)
+
+func check_rows() -> void:
+	var row := ROWS - 1
+	while row >= 0:
+		var row_full := true
+		for col in range(COLS):
+			if is_free(Vector2i(col, TOP_ROW + row)):
+				row_full = false
+				break
+		if row_full:
+			shift_rows(TOP_ROW + row)
+		else:
+			row -= 1
+
+func shift_rows(row: int) -> void:
+	var atlas_coords: Vector2i
+	for j in range(row, TOP_ROW, -1):
+		for i in range(COLS):
+			atlas_coords = board_tiles.get_cell_atlas_coords(Vector2i(i, j - 1))
+			if atlas_coords == Vector2i(-1, -1):
+				board_tiles.erase_cell(Vector2i(i, j))
+			else:
+				board_tiles.set_cell(Vector2i(i, j), atlas_source_id, atlas_coords)
