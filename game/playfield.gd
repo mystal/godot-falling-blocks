@@ -4,6 +4,16 @@ extends Node2D
 @onready var board_tiles: TileMapLayer = $PlacedBlocks
 @onready var active_tiles: TileMapLayer = $ActiveBlocks
 
+# Game vars
+var score: int:
+	get:
+		return score
+	set(value):
+		score = value
+		MessageBus.score_changed.emit(score)
+const REWARD: int = 100
+var game_running: bool
+
 # Grid vars
 const COLS := 10
 const ROWS := 20
@@ -18,6 +28,7 @@ const START_POS := Vector2i(4, 20)
 var cur_pos: Vector2i
 # TODO: Change to lines per second
 var speed: float
+var acceleration: float = 0.25
 
 # Piece vars
 var piece_type: Array
@@ -35,17 +46,32 @@ var next_pieces := []
 func _ready() -> void:
 	new_game()
 
+func _enter_tree() -> void:
+	MessageBus.new_game_requested.connect(new_game)
+
 func new_game() -> void:
+	# Clean up the active piece and the next piece.
+	if active_piece:
+		clear_piece(cur_pos, active_piece)
+		clear_piece(Vector2i(14, 24), next_piece_type[0])
+		clear_board()
+
+	score = 0
 	speed = 1.0
+	game_running = true
 	steps = [0.0, 0.0, 0.0]
 	piece_type = pick_piece()
 	piece_atlas_coords = Vector2i(Pieces.ALL.find(piece_type) + 1, 0)
 	next_piece_type = pick_piece()
 	next_piece_atlas_coords = Vector2i(Pieces.ALL.find(next_piece_type) + 1, 0)
 	create_piece()
+
 	MessageBus.new_game.emit()
 
 func _process(_delta: float) -> void:
+	if not game_running:
+		return
+
 	if Input.is_action_pressed("ui_left"):
 		steps[0] += 10.0
 	elif Input.is_action_pressed("ui_right"):
@@ -80,11 +106,11 @@ func create_piece() -> void:
 	draw_piece(active_piece, cur_pos, piece_atlas_coords)
 
 	# Show next piece
-	clear_piece(Vector2i(14, 24))
+	clear_piece(Vector2i(14, 24), active_piece)
 	draw_piece(next_piece_type[0], Vector2i(14, 24), next_piece_atlas_coords)
 
-func clear_piece(pos: Vector2i) -> void:
-	for block_pos in active_piece:
+func clear_piece(pos: Vector2i, piece_blocks: Array[Vector2i]) -> void:
+	for block_pos in piece_blocks:
 		active_tiles.erase_cell(pos + block_pos)
 
 func draw_piece(piece_blocks: Array[Vector2i], pos: Vector2i, atlas_coords: Vector2i) -> void:
@@ -94,7 +120,7 @@ func draw_piece(piece_blocks: Array[Vector2i], pos: Vector2i, atlas_coords: Vect
 func rotate_piece() -> void:
 	if not can_rotate():
 		return
-	clear_piece(cur_pos)
+	clear_piece(cur_pos, active_piece)
 	rotation_index = (rotation_index + 1) % Pieces.ROTATIONS
 	active_piece = piece_type[rotation_index]
 	draw_piece(active_piece, cur_pos, piece_atlas_coords)
@@ -109,9 +135,10 @@ func move_piece(dir: Vector2i) -> void:
 			next_piece_type = pick_piece()
 			next_piece_atlas_coords = Vector2i(Pieces.ALL.find(next_piece_type) + 1, 0)
 			create_piece()
+			check_game_over()
 		return
 
-	clear_piece(cur_pos)
+	clear_piece(cur_pos, active_piece)
 	cur_pos += dir
 	draw_piece(active_piece, cur_pos, piece_atlas_coords)
 
@@ -149,6 +176,8 @@ func check_rows() -> void:
 				break
 		if row_full:
 			shift_rows(TOP_ROW + row)
+			score += REWARD
+			speed += acceleration
 		else:
 			row -= 1
 
@@ -161,3 +190,15 @@ func shift_rows(row: int) -> void:
 				board_tiles.erase_cell(Vector2i(i, j))
 			else:
 				board_tiles.set_cell(Vector2i(i, j), atlas_source_id, atlas_coords)
+
+func clear_board() -> void:
+	for j in range(ROWS):
+		for i in range(COLS):
+			board_tiles.erase_cell(Vector2i(i, j + TOP_ROW))
+
+func check_game_over() -> void:
+	for block_pos in active_piece:
+		if not is_free(cur_pos + block_pos):
+			land_piece()
+			game_running = false
+			MessageBus.game_over.emit()

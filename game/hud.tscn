@@ -10,14 +10,14 @@ border_width_right = 5
 border_width_bottom = 5
 border_color = Color(0.054902, 0.054902, 0.054902, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_448qv"]
-bg_color = Color(0.333333, 0.513726, 0.513726, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d8ggh"]
+bg_color = Color(0.2975386, 0.46544784, 0.46571368, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q6xfg"]
-bg_color = Color(0.476119, 0.677622, 0.677516, 1)
+bg_color = Color(0.4096, 0.64, 0.44032001, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d8ggh"]
-bg_color = Color(0.443137, 0.643137, 0.643137, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_448qv"]
+bg_color = Color(0.4424402, 0.6448645, 0.6449683, 1)
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_d8ggh")
@@ -45,7 +45,7 @@ offset_top = 350.0
 offset_right = 1047.0
 offset_bottom = 395.0
 theme_override_font_sizes/font_size = 30
-text = "Score: 0"
+text = "SCORE: 0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -65,7 +65,7 @@ offset_top = 500.0
 offset_right = 1047.0
 offset_bottom = 540.0
 theme_override_font_sizes/font_size = 28
-theme_override_styles/hover = SubResource("StyleBoxFlat_448qv")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_q6xfg")
 theme_override_styles/normal = SubResource("StyleBoxFlat_d8ggh")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_q6xfg")
+theme_override_styles/hover = SubResource("StyleBoxFlat_448qv")
 text = "NEW GAME"
