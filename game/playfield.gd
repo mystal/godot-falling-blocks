@@ -22,8 +22,7 @@ const TOP_ROW := 20
 # Movement vars
 const DIRECTIONS := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.DOWN]
 # [0: left, 1: right, 2: down]
-var steps: Array[float]
-var steps_req := 50
+var steps: Vector2
 const START_POS := Vector2i(4, 20)
 var cur_pos: Vector2i
 # TODO: Change to lines per second
@@ -59,7 +58,7 @@ func new_game() -> void:
 	score = 0
 	speed = 1.0
 	game_running = true
-	steps = [0.0, 0.0, 0.0]
+	steps = Vector2.ZERO
 	piece_type = pick_piece()
 	piece_atlas_coords = Vector2i(Pieces.ALL.find(piece_type) + 1, 0)
 	next_piece_type = pick_piece()
@@ -68,28 +67,33 @@ func new_game() -> void:
 
 	MessageBus.new_game.emit()
 
-func _process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not game_running:
 		return
 
-	if Input.is_action_pressed("ui_left"):
-		steps[0] += 10.0
-	elif Input.is_action_pressed("ui_right"):
-		steps[1] += 10.0
-	elif Input.is_action_pressed("ui_down"):
-		steps[2] += 10.0
-	elif Input.is_action_just_pressed("ui_up"):
-		rotate_piece()
+	# Horizontal movement
+	# TODO: Move immediately when pressing in a direction, then repeat movement after
+	# a set time of holding the input down.
+	var x_dir := Input.get_axis("move_left", "move_right")
+	steps.x += 10.0 * x_dir * delta
+
+	if Input.is_action_pressed("soft_drop"):
+		steps.y += 10.0 * delta
+	elif Input.is_action_just_pressed("rotate_right"):
+		rotate_piece(1)
+	elif Input.is_action_just_pressed("rotate_left"):
+		rotate_piece(-1)
 
 	# Apply downward movement every frame
-	steps[2] += speed
+	steps.y += speed * delta
 
-	# Try to move the piece
-	for i in range(steps.size()):
-		pass
-		if steps[i] > steps_req:
-			move_piece(DIRECTIONS[i])
-			steps[i] = 0.0
+	# Try to move the piece left/right then down
+	if absf(steps.x) > 1.0:
+		move_piece(Vector2i.RIGHT * signf(steps.x))
+		steps.x = 0.0
+	if steps.y > 1.0:
+		move_piece(Vector2i.DOWN)
+		steps.y = 0.0
 
 func pick_piece() -> Array:
 	if not next_pieces:
@@ -99,7 +103,7 @@ func pick_piece() -> Array:
 
 func create_piece() -> void:
 	# Reset variables
-	steps = [0.0, 0.0, 0.0]
+	steps = Vector2.ZERO
 	cur_pos = START_POS
 	rotation_index = 0
 	active_piece = piece_type[rotation_index]
@@ -117,11 +121,11 @@ func draw_piece(piece_blocks: Array[Vector2i], pos: Vector2i, atlas_coords: Vect
 	for block_pos in piece_blocks:
 		active_tiles.set_cell(pos + block_pos, atlas_source_id, atlas_coords)
 
-func rotate_piece() -> void:
-	if not can_rotate():
+func rotate_piece(dir: int) -> void:
+	if not can_rotate(dir):
 		return
 	clear_piece(cur_pos, active_piece)
-	rotation_index = (rotation_index + 1) % Pieces.ROTATIONS
+	rotation_index = (rotation_index + dir) % Pieces.ROTATIONS
 	active_piece = piece_type[rotation_index]
 	draw_piece(active_piece, cur_pos, piece_atlas_coords)
 
@@ -149,8 +153,8 @@ func can_move(dir: Vector2i) -> bool:
 			return false
 	return true
 
-func can_rotate() -> bool:
-	var new_rotation_index := (rotation_index + 1) % Pieces.ROTATIONS
+func can_rotate(dir: int) -> bool:
+	var new_rotation_index := (rotation_index + dir) % Pieces.ROTATIONS
 	var new_piece: Array[Vector2i] = piece_type[new_rotation_index]
 	for block_pos in new_piece:
 		if not is_free(cur_pos + block_pos):
