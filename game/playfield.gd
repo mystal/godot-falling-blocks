@@ -20,14 +20,15 @@ const ROWS := 20
 const TOP_ROW := 20
 
 # Movement vars
-const DIRECTIONS := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.DOWN]
-# [0: left, 1: right, 2: down]
-var steps: Vector2
 const START_POS := Vector2i(4, 20)
 var cur_pos: Vector2i
-# TODO: Change to lines per second
-var speed: float
-var acceleration: float = 0.25
+
+var left_held: bool = false
+var right_held: bool = false
+var steps: Vector2
+# In lines per second
+var fall_speed: float
+var acceleration: float = 0.1
 
 # Piece vars
 var piece_type: Array
@@ -56,7 +57,7 @@ func new_game() -> void:
 		clear_board()
 
 	score = 0
-	speed = 1.0
+	fall_speed = 1.0
 	game_running = true
 	steps = Vector2.ZERO
 	piece_type = pick_piece()
@@ -72,11 +73,13 @@ func _physics_process(delta: float) -> void:
 		return
 
 	# Horizontal movement
-	# TODO: Move immediately when pressing in a direction, then repeat movement after
+	# Move immediately when pressing in a direction, then repeat movement after
 	# a set time of holding the input down.
-	var x_dir := Input.get_axis("move_left", "move_right")
-	steps.x += 10.0 * x_dir * delta
+	var x_dir := int(right_held) - int(left_held)
+	if x_dir != 0.0:
+		steps.x += 10.0 * delta
 
+	# TODO: Figure out how to best support multiple moves/rotations at once
 	if Input.is_action_pressed("soft_drop"):
 		steps.y += 10.0 * delta
 	elif Input.is_action_just_pressed("rotate_right"):
@@ -85,15 +88,37 @@ func _physics_process(delta: float) -> void:
 		rotate_piece(-1)
 
 	# Apply downward movement every frame
-	steps.y += speed * delta
+	steps.y += fall_speed * delta
 
 	# Try to move the piece left/right then down
-	if absf(steps.x) > 1.0:
-		move_piece(Vector2i.RIGHT * signf(steps.x))
+	if steps.x >= 1.0:
+		move_piece(Vector2i.RIGHT * x_dir)
 		steps.x = 0.0
-	if steps.y > 1.0:
+	if steps.y >= 1.0:
 		move_piece(Vector2i.DOWN)
 		steps.y = 0.0
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed("move_left"):
+		assert(not left_held)
+		if not left_held:
+			left_held = true
+			steps.x = 1.0
+	elif event.is_action_pressed("move_right"):
+		assert(not right_held)
+		if not right_held:
+			right_held = true
+			steps.x = 1.0
+	elif event.is_action_released("move_left"):
+		assert(left_held)
+		if left_held:
+			left_held = false
+			steps.x = 1.0
+	elif event.is_action_released("move_right"):
+		assert(right_held)
+		if right_held:
+			right_held = false
+			steps.x = 1.0
 
 func pick_piece() -> Array:
 	if not next_pieces:
@@ -181,7 +206,7 @@ func check_rows() -> void:
 		if row_full:
 			shift_rows(TOP_ROW + row)
 			score += REWARD
-			speed += acceleration
+			fall_speed += acceleration
 		else:
 			row -= 1
 
