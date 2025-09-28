@@ -22,20 +22,37 @@ bg_color = Color(0.4424402, 0.6448645, 0.6449683, 1)
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_d8ggh")
 
-[node name="Panel" type="Panel" parent="."]
+[node name="NextPanel" type="Panel" parent="."]
 offset_left = 862.0
-offset_top = 150.0
+offset_top = 90.0
 offset_right = 1062.0
-offset_bottom = 300.0
+offset_bottom = 240.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_v0so3")
 
 [node name="NextPieceLabel" type="Label" parent="."]
 offset_left = 867.0
-offset_top = 100.0
+offset_top = 40.0
 offset_right = 1047.0
-offset_bottom = 145.0
+offset_bottom = 85.0
 theme_override_font_sizes/font_size = 30
-text = "NEXT PIECE"
+text = "NEXT"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HeldPanel" type="Panel" parent="."]
+offset_left = 198.0
+offset_top = 90.0
+offset_right = 398.0
+offset_bottom = 240.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_v0so3")
+
+[node name="HeldPieceLabel" type="Label" parent="."]
+offset_left = 203.0
+offset_top = 40.0
+offset_right = 383.0
+offset_bottom = 85.0
+theme_override_font_sizes/font_size = 30
+text = "HELD"
 horizontal_alignment = 1
 vertical_alignment = 1
 

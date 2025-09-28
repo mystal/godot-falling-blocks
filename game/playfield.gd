@@ -19,11 +19,12 @@ var game_running: bool
 const COLS := 10
 const ROWS := 20
 const TOP_ROW := 20
+const NEXT_PIECE_POS := Vector2i(14, 22)
+const HELD_PIECE_POS := Vector2i(-8, 22)
 
 # Movement vars
 const START_POS := Vector2i(4, 20)
 var cur_pos: Vector2i
-
 var left_held: bool = false
 var right_held: bool = false
 var steps: Vector2
@@ -36,11 +37,14 @@ var piece_type: Array
 var next_piece_type: Array
 var rotation_index := 0
 var active_piece: Array[Vector2i]
+var held_piece_type: Array
+var swapped_piece := false
 
 # Tilemap vars
 var atlas_source_id := 0
 var piece_atlas_coords: Vector2i
 var next_piece_atlas_coords: Vector2i
+var held_piece_atlas_coords: Vector2i
 
 var next_pieces := []
 
@@ -54,18 +58,27 @@ func new_game() -> void:
 	# Clean up the active piece and the next piece.
 	if active_piece:
 		clear_piece(cur_pos, active_piece)
-		clear_piece(Vector2i(14, 24), next_piece_type[0])
+		clear_piece(NEXT_PIECE_POS, next_piece_type[0])
 		clear_board()
 
 	score = 0
 	fall_speed = 1.0
 	game_running = true
 	steps = Vector2.ZERO
+
+	# Reset pieces.
+	next_pieces = []
 	piece_type = pick_piece()
 	piece_atlas_coords = Vector2i(Pieces.ALL.find(piece_type) + 1, 0)
 	next_piece_type = pick_piece()
 	next_piece_atlas_coords = Vector2i(Pieces.ALL.find(next_piece_type) + 1, 0)
 	create_piece()
+
+	# Reset the held piece.
+	if held_piece_type:
+		clear_piece(HELD_PIECE_POS, held_piece_type[0])
+	held_piece_type = []
+	swapped_piece = false
 
 	MessageBus.new_game.emit()
 
@@ -81,7 +94,9 @@ func _physics_process(delta: float) -> void:
 		steps.x += 10.0 * delta
 
 	# TODO: Figure out how to best support multiple moves/rotations at once
-	if Input.is_action_just_pressed("hard_drop"):
+	if Input.is_action_just_pressed("hold_piece"):
+		hold_piece()
+	elif Input.is_action_just_pressed("hard_drop"):
 		hard_drop_piece()
 	elif Input.is_action_pressed("soft_drop"):
 		steps.y += 10.0 * delta
@@ -140,8 +155,12 @@ func create_piece() -> void:
 	update_preview()
 
 	# Show next piece
-	clear_piece(Vector2i(14, 24), active_piece)
-	draw_piece(next_piece_type[0], Vector2i(14, 24), next_piece_atlas_coords)
+	clear_piece(NEXT_PIECE_POS, active_piece)
+	draw_piece(next_piece_type[0], NEXT_PIECE_POS, next_piece_atlas_coords)
+
+	# Show held piece, if any
+	if held_piece_type:
+		draw_piece(held_piece_type[0], HELD_PIECE_POS, held_piece_atlas_coords)
 
 func clear_piece(pos: Vector2i, piece_blocks: Array[Vector2i]) -> void:
 	for block_pos in piece_blocks:
@@ -180,6 +199,7 @@ func rotate_piece(dir: int) -> void:
 func move_piece(dir: Vector2i) -> void:
 	if not can_move(dir):
 		if dir == Vector2i.DOWN:
+			swapped_piece = false
 			land_piece()
 			check_rows()
 			piece_type = next_piece_type
@@ -211,6 +231,7 @@ func hard_drop_piece() -> void:
 
 	# Land piece and create new piece!
 	cur_pos = drop_pos
+	swapped_piece = false
 	active_tiles.clear()
 	land_piece()
 	check_rows()
@@ -220,6 +241,33 @@ func hard_drop_piece() -> void:
 	next_piece_atlas_coords = Vector2i(Pieces.ALL.find(next_piece_type) + 1, 0)
 	create_piece()
 	check_game_over()
+
+func hold_piece() -> void:
+	if swapped_piece:
+		return
+
+	# Clear the current piece before holding it.
+	clear_piece(cur_pos, active_piece)
+	if held_piece_type:
+		# A piece is held, clear the current held piece and swap the current and held pieces.
+		clear_piece(HELD_PIECE_POS, held_piece_type[0])
+		var old_piece_type := piece_type
+		var old_piece_atlas_coords := piece_atlas_coords
+		piece_type = held_piece_type
+		piece_atlas_coords = held_piece_atlas_coords
+		held_piece_type = old_piece_type
+		held_piece_atlas_coords = old_piece_atlas_coords
+	else:
+		# No piece held, so hold the current piece and queue up the next piece.
+		held_piece_type = piece_type
+		held_piece_atlas_coords = piece_atlas_coords
+		piece_type = next_piece_type
+		piece_atlas_coords = next_piece_atlas_coords
+		next_piece_type = pick_piece()
+		next_piece_atlas_coords = Vector2i(Pieces.ALL.find(next_piece_type) + 1, 0)
+	create_piece()
+	draw_piece(held_piece_type[0], HELD_PIECE_POS, held_piece_atlas_coords)
+	swapped_piece = true
 
 # Check if there is space to move a piece
 func can_move(dir: Vector2i) -> bool:
