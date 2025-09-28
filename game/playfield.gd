@@ -3,6 +3,7 @@ extends Node2D
 
 @onready var board_tiles: TileMapLayer = $PlacedBlocks
 @onready var active_tiles: TileMapLayer = $ActiveBlocks
+@onready var preview_tiles: TileMapLayer = $PreviewBlocks
 
 # Game vars
 var score: int:
@@ -134,6 +135,8 @@ func create_piece() -> void:
 	active_piece = piece_type[rotation_index]
 	draw_piece(active_piece, cur_pos, piece_atlas_coords)
 
+	update_preview()
+
 	# Show next piece
 	clear_piece(Vector2i(14, 24), active_piece)
 	draw_piece(next_piece_type[0], Vector2i(14, 24), next_piece_atlas_coords)
@@ -146,6 +149,22 @@ func draw_piece(piece_blocks: Array[Vector2i], pos: Vector2i, atlas_coords: Vect
 	for block_pos in piece_blocks:
 		active_tiles.set_cell(pos + block_pos, atlas_source_id, atlas_coords)
 
+func update_preview() -> void:
+	preview_tiles.clear()
+	var preview_pos := cur_pos
+	var drop_done := false
+	for row in range(cur_pos.y, TOP_ROW + ROWS):
+		var loop_pos := Vector2i(cur_pos.x, row)
+		for block_pos in active_piece:
+			if not is_free(loop_pos + block_pos):
+				preview_pos.y = row - 1
+				drop_done = true
+				break
+		if drop_done:
+			break
+	for block_pos in active_piece:
+		preview_tiles.set_cell(preview_pos + block_pos, atlas_source_id, piece_atlas_coords)
+
 func rotate_piece(dir: int) -> void:
 	if not can_rotate(dir):
 		return
@@ -153,6 +172,8 @@ func rotate_piece(dir: int) -> void:
 	rotation_index = (rotation_index + dir) % Pieces.ROTATIONS
 	active_piece = piece_type[rotation_index]
 	draw_piece(active_piece, cur_pos, piece_atlas_coords)
+
+	update_preview()
 
 func move_piece(dir: Vector2i) -> void:
 	if not can_move(dir):
@@ -170,6 +191,8 @@ func move_piece(dir: Vector2i) -> void:
 	clear_piece(cur_pos, active_piece)
 	cur_pos += dir
 	draw_piece(active_piece, cur_pos, piece_atlas_coords)
+
+	update_preview()
 
 # Check if there is space to move a piece
 func can_move(dir: Vector2i) -> bool:
