@@ -81,7 +81,9 @@ func _physics_process(delta: float) -> void:
 		steps.x += 10.0 * delta
 
 	# TODO: Figure out how to best support multiple moves/rotations at once
-	if Input.is_action_pressed("soft_drop"):
+	if Input.is_action_just_pressed("hard_drop"):
+		hard_drop_piece()
+	elif Input.is_action_pressed("soft_drop"):
 		steps.y += 10.0 * delta
 	elif Input.is_action_just_pressed("rotate_right"):
 		rotate_piece(1)
@@ -193,6 +195,31 @@ func move_piece(dir: Vector2i) -> void:
 	draw_piece(active_piece, cur_pos, piece_atlas_coords)
 
 	update_preview()
+
+func hard_drop_piece() -> void:
+	var drop_pos := cur_pos
+	var drop_done := false
+	for row in range(cur_pos.y, TOP_ROW + ROWS):
+		var loop_pos := Vector2i(cur_pos.x, row)
+		for block_pos in active_piece:
+			if not is_free(loop_pos + block_pos):
+				drop_pos.y = row - 1
+				drop_done = true
+				break
+		if drop_done:
+			break
+
+	# Land piece and create new piece!
+	cur_pos = drop_pos
+	active_tiles.clear()
+	land_piece()
+	check_rows()
+	piece_type = next_piece_type
+	piece_atlas_coords = next_piece_atlas_coords
+	next_piece_type = pick_piece()
+	next_piece_atlas_coords = Vector2i(Pieces.ALL.find(next_piece_type) + 1, 0)
+	create_piece()
+	check_game_over()
 
 # Check if there is space to move a piece
 func can_move(dir: Vector2i) -> bool:
