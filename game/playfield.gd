@@ -101,7 +101,7 @@ func _physics_process(delta: float) -> void:
 		move_piece(Vector2i.DOWN)
 		steps.y = 0.0
 
-func _unhandled_key_input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("move_left"):
 		assert(not left_held)
 		if not left_held:
